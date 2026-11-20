@@ -21,6 +21,7 @@ class FortifyServiceProvider extends ServiceProvider
             {
                 Validator::make($input, ['password' => ['required', 'confirmed', Password::defaults()]])->validate();
                 $user->forceFill(['password' => Hash::make($input['password'])])->save();
+                $user->tokens()->delete();
             }
         });
     }
