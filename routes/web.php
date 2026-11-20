@@ -17,5 +17,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('residents/{resident}/rides/create', fn (int $resident) => Inertia::render('Rides/Create', ['residentId' => $resident]))
             ->whereNumber('resident')->name('rides.create');
     });
+    Route::get('rides', fn () => Inertia::render('Rides/Index'))
+        ->middleware('can:access-rides')->name('rides.index');
 });
 require __DIR__.'/settings.php';

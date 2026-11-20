@@ -20,6 +20,7 @@ const mainNavItems = computed<NavItem[]>(() => [
               { title: 'Book a ride', href: '/book-ride', icon: CarFront },
           ]
         : []),
+    ...(role.value === 'taxi_company' ? [{ title: 'Assigned rides', href: '/rides', icon: CarFront }] : []),
 ]);
 const footerNavItems: NavItem[] = [{ title: 'API documentation', href: '/docs/api', icon: BookOpen }];
 </script>
