@@ -56,7 +56,33 @@ return [
         /*
          * Description rendered on the home page of the API documentation (`/docs/api`).
          */
-        'description' => 'Wmo Utrecht assessment. Use a Sanctum Bearer token from API access, or first-party session cookies with XSRF protection. Only callcenters may read residents and book rides; taxi companies may read their own rides. Municipal accounts have context and token access only. POST /rides requires Idempotency-Key and integer meters. Annual periods and assignment end dates are exclusive; ride dates use Europe/Amsterdam. 401 unauthenticated, 403 forbidden, 404 missing, 409 business conflict, 422 invalid input. Token management requires a session; token creation additionally requires the current password.',
+        'description' => <<<'MARKDOWN'
+Callcenter accounts can look up Utrecht residents and book rides. Taxi-company
+accounts can list rides assigned to their company. Municipal accounts can view
+aggregate statistics. The demo contains fictional records.
+
+## Authentication
+
+Send a personal access token in the `Authorization: Bearer <token>` header, or
+use a web session with CSRF protection. The token management endpoints require
+a web session. Token creation also requires the account password.
+
+## Dates and distances
+
+Distances are in whole meters. Budget periods and taxi assignments start at
+midnight in `Europe/Amsterdam`. Their end dates are exclusive. If the annual
+budget for the ride date has yet to open, booking returns HTTP 409.
+
+## Errors
+
+| Status | Meaning |
+| --- | --- |
+| 401 | Authentication required |
+| 403 | Access denied |
+| 404 | Resource not found |
+| 409 | Business conflict |
+| 422 | Validation failed |
+MARKDOWN,
     ],
 
     'ui' => [
