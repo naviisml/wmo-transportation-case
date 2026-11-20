@@ -27,3 +27,9 @@ it('keeps demo data repeatable and prevents production seeding', function () {
     (new DemoSeeder)->run();
     expect([Resident::count(), Ride::count(), BudgetPeriod::count()])->toBe($counts);
 });
+
+it('preserves booked-by history when an account requests deletion', function () {
+    $this->actingAs($this->callcenter)->delete('/settings/profile', ['password' => 'demo-assessment-only'])
+        ->assertSessionHasErrors('password');
+    expect($this->callcenter->fresh())->not->toBeNull();
+});

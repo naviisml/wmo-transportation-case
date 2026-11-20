@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
+use App\Models\Ride;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -50,6 +52,13 @@ class ProfileController extends Controller
         ]);
 
         $user = $request->user();
+
+        if (Ride::query()->where('booked_by', $user->id)->exists()) {
+            throw ValidationException::withMessages([
+                'password' => 'This account has booking history. Contact the municipality to arrange account closure.',
+            ]);
+        }
+        $user->tokens()->delete();
 
         Auth::logout();
 
