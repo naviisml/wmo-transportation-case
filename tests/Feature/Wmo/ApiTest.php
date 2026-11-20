@@ -17,6 +17,12 @@ beforeEach(function () {
     $this->resident = Resident::where('reference', 'DEMO-001')->firstOrFail();
 });
 
+it('requires authentication and hides public registration', function () {
+    $this->getJson('/api/v1/me')->assertUnauthorized();
+    $this->get('/register')->assertNotFound();
+    $this->post('/register', [])->assertNotFound();
+});
+
 it('keeps demo data repeatable and prevents production seeding', function () {
     $counts = [Resident::count(), Ride::count(), BudgetPeriod::count()];
     $passwordHash = $this->callcenter->password;
