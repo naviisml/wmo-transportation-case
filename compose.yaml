@@ -23,6 +23,20 @@ services:
             - sail
         depends_on:
             - pgsql
+    scheduler:
+        image: 'sail-8.5/app'
+        working_dir: /var/www/html
+        user: '${WWWUSER:-1000}:${WWWGROUP:-1000}'
+        entrypoint: ['php']
+        command: ['artisan', 'schedule:work']
+        restart: unless-stopped
+        volumes:
+            - '.:/var/www/html'
+        networks:
+            - sail
+        depends_on:
+            pgsql:
+                condition: service_healthy
     pgsql:
         image: 'postgres:18-alpine'
         ports:
