@@ -1,56 +1,53 @@
-name: tests
+name: Sail checks
 
 on:
   push:
-    branches:
-      - develop
-      - main
+    branches: [master, main, develop]
   pull_request:
-    branches:
-      - develop
-      - main
+
+permissions:
+  contents: read
 
 jobs:
-  ci:
+  assessment:
     runs-on: ubuntu-latest
-
+    timeout-minutes: 30
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: 8.4
-          tools: composer:v2
-          coverage: xdebug
+      - name: Bootstrap Sail
+        run: |
+          cp .env.example .env
+          sed -i "s/^WWWUSER=.*/WWWUSER=$(id -u)/; s/^WWWGROUP=.*/WWWGROUP=$(id -g)/" .env
+          docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/var/www/html" -w /var/www/html \
+            laravelsail/php84-composer:latest composer install --no-interaction --prefer-dist --ignore-platform-reqs
+          ./vendor/bin/sail build laravel.test
+          ./vendor/bin/sail up -d --wait
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
+      - name: Prepare demo and build frontend
+        run: |
+          ./vendor/bin/sail composer check-platform-reqs
+          ./vendor/bin/sail artisan key:generate
+          ./vendor/bin/sail artisan migrate --seed --force
+          ./vendor/bin/sail npm ci
+          ./vendor/bin/sail npm run build
 
-      - name: Install Node Dependencies
-        run: npm ci
+      - name: PHP tests and code checks
+        run: |
+          ./vendor/bin/sail artisan test
+          ./vendor/bin/sail pint --test
+          ./vendor/bin/sail npx eslint .
+          ./vendor/bin/sail npm run typecheck
 
-      - name: Create SQLite Database
-        run: touch database/database.sqlite
+      - name: Browser tests
+        run: |
+          ./vendor/bin/sail exec -u root laravel.test npx playwright install --with-deps chromium
+          ./vendor/bin/sail npm run test:e2e
 
-      - name: Install Dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+      - name: Show service logs on failure
+        if: failure()
+        run: docker compose logs --tail=150
 
-      - name: Copy Environment File
-        run: cp .env.example .env
-
-      - name: Generate Application Key
-        run: php artisan key:generate
-
-      - name: Publish Ziggy Configuration
-        run: php artisan ziggy:generate
-
-      - name: Build Assets
-        run: npm run build
-
-      - name: Tests
-        run: ./vendor/bin/phpunit
+      - name: Stop services
+        if: always()
+        run: docker compose down --volumes
