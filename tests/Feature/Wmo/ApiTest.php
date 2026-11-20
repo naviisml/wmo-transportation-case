@@ -30,13 +30,11 @@ function bookRequest($test, $payload = null, $key = 'test-booking')
 {
     return $test->postJson('/api/v1/rides', $payload ?? $test->payload, ['Idempotency-Key' => $key]);
 }
-
 it('requires authentication and hides public registration', function () {
     $this->getJson('/api/v1/me')->assertUnauthorized();
     $this->get('/register')->assertNotFound();
     $this->post('/register', [])->assertNotFound();
 });
-
 it('searches and paginates minimized resident data', function () {
     Sanctum::actingAs($this->callcenter, ['residents:read']);
     $this->getJson('/api/v1/residents')->assertOk()->assertJsonCount(15, 'data')->assertJsonPath('meta.total', 24);
@@ -76,7 +74,6 @@ it('lists the whole Utrecht register regardless of Wmo status or postal locality
         ->assertUnprocessable()
         ->assertJsonValidationErrors('resident_id');
 });
-
 it('enforces roles and token abilities as well as policies', function () {
     foreach (['gemeente', 'taxi-a', 'taxi-b'] as $account) {
         $user = User::where('email', $account.'@example.test')->firstOrFail();
@@ -88,7 +85,6 @@ it('enforces roles and token abilities as well as policies', function () {
     $this->getJson('/api/v1/residents')->assertForbidden();
     bookRequest($this)->assertForbidden();
 });
-
 it('books and consumes meters atomically with an immutable company snapshot', function () {
     $token = $this->callcenter->createToken('Callcenter booking', ['rides:book']);
     $this->withToken($token->plainTextToken);
@@ -111,7 +107,6 @@ it('books and consumes meters atomically with an immutable company snapshot', fu
         expect($assignedIds->contains($ride->id))->toBe($taxiUser->taxi_company_id === $ride->taxi_company_id);
     }
 });
-
 it('deduplicates booking retries and rejects key reuse with different data', function () {
     Sanctum::actingAs($this->callcenter, ['*']);
     $first = bookRequest($this)->assertCreated();
@@ -119,7 +114,6 @@ it('deduplicates booking retries and rejects key reuse with different data', fun
     expect(Ride::where('idempotency_key', 'test-booking')->count())->toBe(1);
     bookRequest($this, [...$this->payload, 'distance_meters' => 20000])->assertConflict();
 });
-
 it('rejects invalid inputs and client supplied company claims', function () {
     Sanctum::actingAs($this->callcenter, ['*']);
     $this->postJson('/api/v1/rides', $this->payload)->assertUnprocessable()->assertJsonValidationErrors('idempotency_key');
@@ -127,19 +121,16 @@ it('rejects invalid inputs and client supplied company claims', function () {
         bookRequest($this, [...$this->payload, ...$change])->assertUnprocessable();
     }
 });
-
 it('rejects absent or terminated authorizations', function (string $reference) {
     Sanctum::actingAs($this->callcenter, ['*']);
     $resident = Resident::where('reference', $reference)->firstOrFail();
     bookRequest($this, [...$this->payload, 'resident_id' => $resident->id])->assertConflict();
 })->with(['DEMO-007', 'DEMO-008']);
-
 it('rejects a future authorization start', function () {
     Sanctum::actingAs($this->callcenter, ['*']);
     $this->resident->authorization->update(['starts_on' => now()->addMonth()]);
     bookRequest($this)->assertConflict();
 });
-
 it('rejects insufficient budget without creating a ride', function () {
     Sanctum::actingAs($this->callcenter, ['*']);
     $r = Resident::where('reference', 'DEMO-006')->firstOrFail();
@@ -147,7 +138,6 @@ it('rejects insufficient budget without creating a ride', function () {
     bookRequest($this, [...$this->payload, 'resident_id' => $r->id])->assertConflict();
     expect(Ride::count())->toBe($before);
 });
-
 it('rejects missing and expired parcel assignments', function () {
     Sanctum::actingAs($this->callcenter, ['*']);
     $address = $this->resident->address;
@@ -158,7 +148,6 @@ it('rejects missing and expired parcel assignments', function () {
     ParcelAssignment::where('parcel_id', $parcel)->update(['ends_on' => now()->subDay()->toDateString()]);
     bookRequest($this)->assertConflict();
 });
-
 it('rolls back the ride when the budget update fails', function () {
     Sanctum::actingAs($this->callcenter, ['*']);
     $budget = $this->resident->authorization->budgetPeriods()->orderByDesc('starts_on')->first();
@@ -172,7 +161,6 @@ it('rolls back the ride when the budget update fails', function () {
     }expect(Ride::count())->toBe($before);
     expect($budget->fresh()->consumed_meters)->toBe($budget->consumed_meters);
 });
-
 it('isolates taxi companies before pagination and omits budget data', function () {
     foreach (['taxi-a', 'taxi-b'] as $account) {
         $user = User::where('email', $account.'@example.test')->first();
@@ -186,7 +174,6 @@ it('isolates taxi companies before pagination and omits budget data', function (
         $this->getJson('/api/v1/rides?from=2035-01-01')->assertJsonCount(0, 'data');
     }
 });
-
 it('authenticates a real bearer token and honors revocation', function () {
     $token = $this->callcenter->createToken('test', ['residents:read']);
     $this->withToken($token->plainTextToken)->getJson('/api/v1/residents')->assertOk();
@@ -195,7 +182,20 @@ it('authenticates a real bearer token and honors revocation', function () {
     $this->app['auth']->forgetGuards();
     $this->withToken($token->plainTextToken)->getJson('/api/v1/me')->assertUnauthorized();
 });
-
+it('only allows password verified sessions to create tokens', function () {
+    $this->actingAs($this->callcenter)->postJson('/api/v1/tokens', ['name' => 'Bruno', 'password' => 'wrong'])->assertUnprocessable();
+    $response = $this->postJson('/api/v1/tokens', ['name' => 'Bruno', 'password' => 'demo-assessment-only'])->assertCreated();
+    expect($response->json('token'))->toContain('|');
+    $this->getJson('/api/v1/tokens')->assertOk()->assertJsonMissingPath('data.0.token');
+    $token = $this->callcenter->tokens()->firstOrFail();
+    expect($token->abilities)->toBe(['residents:read', 'rides:book', 'dashboard:read']);
+    $this->deleteJson('/api/v1/tokens/'.$token->id)->assertNoContent();
+});
+it('prevents bearer clients minting or listing tokens', function () {
+    Sanctum::actingAs($this->callcenter, ['*']);
+    $this->postJson('/api/v1/tokens', ['name' => 'escalation', 'password' => 'demo-assessment-only'])->assertForbidden();
+    $this->getJson('/api/v1/tokens')->assertForbidden();
+});
 it('keeps demo data repeatable and prevents production seeding', function () {
     $counts = [Resident::count(), Ride::count(), BudgetPeriod::count()];
     $passwordHash = $this->callcenter->password;
@@ -206,7 +206,6 @@ it('keeps demo data repeatable and prevents production seeding', function () {
     (new DemoSeeder)->run();
     expect([Resident::count(), Ride::count(), BudgetPeriod::count()])->toBe($counts);
 });
-
 it('rejects a ride beyond the generated annual budget boundary', function () {
     Sanctum::actingAs($this->callcenter, ['*']);
     $period = $this->resident->authorization->budgetPeriods()->orderByDesc('starts_on')->first();
