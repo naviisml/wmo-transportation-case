@@ -2,6 +2,7 @@
 import BudgetSummary from '@/components/wmo/BudgetSummary.vue';
 import MetricCard from '@/components/wmo/MetricCard.vue';
 import type { DashboardSummary } from '@/types/wmo';
+import WorkspaceLink from './WorkspaceLink.vue';
 defineProps<{ summary: DashboardSummary }>();
 </script>
 
@@ -10,6 +11,9 @@ defineProps<{ summary: DashboardSummary }>();
         <MetricCard label="Residents" :value="summary.residents_total ?? 0" description="Fictional Wmo-related resident records" />
         <MetricCard label="Active authorizations" :value="summary.active_authorizations ?? 0" description="Valid today in Europe/Amsterdam" />
         <MetricCard label="Your upcoming bookings" :value="summary.upcoming_rides" description="Booked rides scheduled from now onward" />
+    </div>
+    <div class="grid gap-4 md:grid-cols-2">
+        <WorkspaceLink href="/residents" title="Residents" description="Search residents and open their authorization and annual budget details." />
     </div>
     <BudgetSummary v-if="summary.budget" :budget="summary.budget" title="Active annual allowances" />
 </template>

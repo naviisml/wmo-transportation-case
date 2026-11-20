@@ -5,7 +5,7 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Building2, LayoutGrid } from 'lucide-vue-next';
+import { BookOpen, Building2, LayoutGrid, Users } from 'lucide-vue-next';
 import { computed } from 'vue';
 import AppLogo from './AppLogo.vue';
 
@@ -14,6 +14,7 @@ const role = computed(() => page.props.auth.user?.role);
 const mainNavItems = computed<NavItem[]>(() => [
     { title: 'Overview', href: '/dashboard', icon: LayoutGrid },
     ...(role.value === 'municipality' ? [{ title: 'Municipal overview', href: '/municipality', icon: Building2 }] : []),
+    ...(role.value === 'callcenter' ? [{ title: 'Residents', href: '/residents', icon: Users }] : []),
 ]);
 const footerNavItems: NavItem[] = [{ title: 'API documentation', href: '/docs/api', icon: BookOpen }];
 </script>
