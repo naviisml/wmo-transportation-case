@@ -2,6 +2,7 @@
 import CallcenterOverview from '@/components/dashboard/CallcenterOverview.vue';
 import MunicipalityOverview from '@/components/dashboard/MunicipalityOverview.vue';
 import TaxiOverview from '@/components/dashboard/TaxiOverview.vue';
+import WorkspaceLink from '@/components/dashboard/WorkspaceLink.vue';
 import PageHeading from '@/components/wmo/PageHeading.vue';
 import RequestFeedback from '@/components/wmo/RequestFeedback.vue';
 import { useDashboard } from '@/composables/useDashboard';
@@ -21,6 +22,11 @@ const { summary, pending, error, status, load } = useDashboard();
                 <MunicipalityOverview v-if="summary.role === 'municipality'" :summary="summary" />
                 <CallcenterOverview v-else-if="summary.role === 'callcenter'" :summary="summary" />
                 <TaxiOverview v-else :summary="summary" />
+                <WorkspaceLink
+                    href="/api-access"
+                    title="API access"
+                    description="Manage personal access tokens, API documentation and client collections."
+                />
             </template>
         </div>
     </AppLayout>
