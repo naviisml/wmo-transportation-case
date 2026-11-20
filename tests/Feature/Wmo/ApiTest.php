@@ -8,6 +8,7 @@ use App\Models\User;
 use Carbon\CarbonImmutable;
 use Database\Seeders\DemoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Gate;
 use Laravel\Sanctum\Sanctum;
 
 uses(RefreshDatabase::class);
@@ -62,6 +63,20 @@ it('lists the whole Utrecht register regardless of Wmo status or postal locality
     $this->getJson('/api/v1/residents/'.$otherMunicipality->id)->assertNotFound();
 });
 
+it('isolates taxi companies before pagination and omits budget data', function () {
+    foreach (['taxi-a', 'taxi-b'] as $account) {
+        $user = User::where('email', $account.'@example.test')->first();
+        Sanctum::actingAs($user, ['rides:read']);
+        $response = $this->getJson('/api/v1/rides')->assertOk()->assertJsonMissingPath('data.0.budget');
+        foreach ($response->json('data') as $ride) {
+            expect($ride['taxi_company']['id'])->toBe($user->taxi_company_id);
+        }$other = Ride::where('taxi_company_id', '!=', $user->taxi_company_id)->first();
+        expect(Gate::forUser($user)->allows('view', $other))->toBeFalse();
+        $this->getJson('/api/v1/rides?status=invalid')->assertUnprocessable();
+        $this->getJson('/api/v1/rides?from=2035-01-01')->assertJsonCount(0, 'data');
+    }
+});
+
 it('keeps demo data repeatable and prevents production seeding', function () {
     $counts = [Resident::count(), Ride::count(), BudgetPeriod::count()];
     $passwordHash = $this->callcenter->password;
@@ -71,6 +86,12 @@ it('keeps demo data repeatable and prevents production seeding', function () {
     $this->app->detectEnvironment(fn () => 'production');
     (new DemoSeeder)->run();
     expect([Resident::count(), Ride::count(), BudgetPeriod::count()])->toBe($counts);
+});
+
+it('accepts an independent through-date filter', function () {
+    Sanctum::actingAs(User::where('email', 'taxi-a@example.test')->firstOrFail(), ['rides:read']);
+    $this->getJson('/api/v1/rides?to=2035-01-01')->assertOk();
+    $this->getJson('/api/v1/rides?from=2035-01-02&to=2035-01-01')->assertUnprocessable();
 });
 
 it('preserves booked-by history when an account requests deletion', function () {
