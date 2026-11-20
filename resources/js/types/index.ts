@@ -17,6 +17,7 @@ export interface NavItem {
 }
 
 export interface SharedData {
+    [key: string]: unknown;
     name: string;
     quote: { message: string; author: string };
     auth: Auth;
@@ -30,6 +31,8 @@ export interface SharedData {
 }
 
 export interface User {
+    role: 'municipality' | 'callcenter' | 'taxi_company';
+    taxi_company_id: number | null;
     id: number;
     name: string;
     email: string;
@@ -40,3 +43,12 @@ export interface User {
 }
 
 export type BreadcrumbItemType = BreadcrumbItem;
+
+declare module '@inertiajs/core' {
+    interface PageProps {
+        auth: Auth;
+        name: string;
+        quote: SharedData['quote'];
+        ziggy: SharedData['ziggy'];
+    }
+}
