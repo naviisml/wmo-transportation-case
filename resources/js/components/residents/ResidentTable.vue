@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { authorizationStatus, currentBudget, kilometers, residentialAddress } from '@/lib/wmo';
 import type { Resident } from '@/types/wmo';
 import { Link } from '@inertiajs/vue3';
-defineProps<{ residents: Resident[] }>();
+defineProps<{ residents: Resident[]; selectingForBooking: boolean }>();
 </script>
 
 <template>
@@ -34,7 +34,9 @@ defineProps<{ residents: Resident[] }>();
                     </td>
                     <td class="p-4">
                         <Button as-child size="sm" variant="outline">
-                            <Link :href="`/residents/${resident.id}`">View resident</Link>
+                            <Link :href="selectingForBooking ? `/residents/${resident.id}/rides/create` : `/residents/${resident.id}`">{{
+                                selectingForBooking ? 'Select resident' : 'View resident'
+                            }}</Link>
                         </Button>
                     </td>
                 </tr>

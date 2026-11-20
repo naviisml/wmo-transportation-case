@@ -14,6 +14,7 @@ defineProps<{ summary: DashboardSummary }>();
     </div>
     <div class="grid gap-4 md:grid-cols-2">
         <WorkspaceLink href="/residents" title="Residents" description="Search residents and open their authorization and annual budget details." />
+        <WorkspaceLink href="/book-ride" title="Book a ride" description="Select a resident and book a journey against their applicable allowance." />
     </div>
     <BudgetSummary v-if="summary.budget" :budget="summary.budget" title="Active annual allowances" />
 </template>

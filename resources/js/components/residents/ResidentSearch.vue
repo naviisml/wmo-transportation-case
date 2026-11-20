@@ -9,6 +9,7 @@ import { listResidents } from '@/services/api/residents';
 import type { Page, Resident } from '@/types/wmo';
 import { onMounted, ref } from 'vue';
 import ResidentTable from './ResidentTable.vue';
+withDefaults(defineProps<{ selectingForBooking?: boolean }>(), { selectingForBooking: false });
 const search = ref('');
 const appliedSearch = ref('');
 const result = ref<Page<Resident>>();
@@ -36,7 +37,7 @@ onMounted(load);
         </form>
         <RequestFeedback :pending="pending" :error="error" :status="status" @retry="load(result?.meta.current_page)" />
         <template v-if="result && !error">
-            <ResidentTable v-if="result.data.length" :residents="result.data" />
+            <ResidentTable v-if="result.data.length" :residents="result.data" :selecting-for-booking="selectingForBooking" />
             <div v-else class="rounded-xl border p-10 text-center text-sm text-muted-foreground">
                 No residents found. Try a different name or reference.
             </div>

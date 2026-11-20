@@ -27,9 +27,10 @@ const breadcrumbs = computed(() => [
                 :title="resident?.name ?? 'Resident details'"
                 description="Authorization, residential address and annual distance allowances."
             >
-                <template #actions>
-                    <Button as-child variant="outline"><Link href="/residents">Back to residents</Link></Button>
-                </template>
+                <template #actions
+                    ><Button as-child variant="outline"><Link href="/residents">Back to residents</Link></Button
+                    ><Button v-if="resident" as-child><Link :href="`/residents/${residentId}/rides/create`">Book a ride</Link></Button></template
+                >
             </PageHeading>
             <RequestFeedback :pending="pending" :error="error" :status="status" @retry="load" />
             <template v-if="resident && !error">

@@ -13,6 +13,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('residents', fn () => Inertia::render('Residents/Index'))->name('residents.index');
         Route::get('residents/{resident}', fn (int $resident) => Inertia::render('Residents/Show', ['residentId' => $resident]))
             ->whereNumber('resident')->name('residents.show');
+        Route::get('book-ride', fn () => Inertia::render('Rides/SelectResident'))->name('rides.select-resident');
+        Route::get('residents/{resident}/rides/create', fn (int $resident) => Inertia::render('Rides/Create', ['residentId' => $resident]))
+            ->whereNumber('resident')->name('rides.create');
     });
 });
 require __DIR__.'/settings.php';
