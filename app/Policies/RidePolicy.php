@@ -8,6 +8,11 @@ use App\Models\User;
 
 class RidePolicy
 {
+    public function create(User $user): bool
+    {
+        return $user->role === Role::Callcenter && $user->tokenCan('rides:book');
+    }
+
     public function viewAny(User $user): bool
     {
         return $user->role === Role::TaxiCompany && $user->tokenCan('rides:read');

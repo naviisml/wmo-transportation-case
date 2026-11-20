@@ -11,4 +11,5 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'throttle:wmo-api', AuditApiAcc
     Route::get('residents', [ResidentController::class, 'index']);
     Route::get('residents/{resident}', [ResidentController::class, 'show'])->whereNumber('resident');
     Route::get('rides', [RideController::class, 'index']);
+    Route::post('rides', [RideController::class, 'store'])->middleware('throttle:bookings');
 });

@@ -15,5 +15,6 @@ class AppServiceProvider extends ServiceProvider
     {
         RateLimiter::for('login', fn (Request $r) => Limit::perMinute(5)->by(strtolower((string) $r->input('email')).'|'.$r->ip()));
         RateLimiter::for('wmo-api', fn (Request $r) => Limit::perMinute(120)->by($r->user()?->id ?? $r->ip()));
+        RateLimiter::for('bookings', fn (Request $r) => Limit::perMinute(30)->by($r->user()?->id ?? $r->ip()));
     }
 }
