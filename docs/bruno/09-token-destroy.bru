@@ -1,0 +1,19 @@
+meta {
+  name: token.destroy
+  type: http
+  seq: 9
+}
+
+delete {
+  url: {{base_url}}/api/v1/tokens/{{token_id}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  Accept: application/json
+}

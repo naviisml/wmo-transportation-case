@@ -1,0 +1,25 @@
+meta {
+  name: ride.store
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/api/v1/rides
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  Accept: application/json
+  Idempotency-Key: {{idempotency_key}}
+  Content-Type: application/json
+}
+
+body:json {
+"Example "
+}

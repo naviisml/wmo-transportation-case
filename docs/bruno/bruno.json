@@ -1,0 +1,9 @@
+{
+    "version": "1",
+    "name": "Wmo Utrecht API",
+    "type": "collection",
+    "ignore": [
+        "node_modules",
+        ".git"
+    ]
+}
