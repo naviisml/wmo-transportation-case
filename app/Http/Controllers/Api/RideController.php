@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Actions\BookRide;
+use App\Data\BookRideData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\BookRideRequest;
 use App\Http\Requests\Api\ListRidesRequest;
@@ -80,7 +81,7 @@ class RideController extends Controller
         $data = $request->validated();
         $key = $data['idempotency_key'];
         unset($data['idempotency_key']);
-        $ride = $action->handle($request->user(), $data, $key);
+        $ride = $action->handle($request->user(), BookRideData::fromArray($data), $key);
 
         return (new RideResource($ride->load(['resident', 'taxiCompany', 'budgetPeriod'])))->response()->setStatusCode(201);
     }

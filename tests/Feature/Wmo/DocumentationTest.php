@@ -1,31 +1,42 @@
 <?php
 
+use App\Models\Resident;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
-it('exports one specification and derives complete client collections', function () {
-    $this->artisan('wmo:export-api')->assertSuccessful();
-    $spec = json_decode(File::get(base_path('docs/openapi.json')), true, 512, JSON_THROW_ON_ERROR);
+it('publishes the API through Scramble OpenAPI', function () {
+    $response = $this->get('/docs/api.json')->assertSuccessful();
+    $spec = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
+
     expect($spec['openapi'])->toStartWith('3.1');
     expect($spec['paths'])->toHaveKeys(['/me', '/dashboard', '/residents', '/residents/{resident}', '/rides', '/tokens']);
     $booking = $spec['paths']['/rides']['post'];
     expect($booking['responses'])->toHaveKeys(['201', '401', '403', '409', '422']);
     expect(collect($booking['parameters'])->firstWhere('name', 'Idempotency-Key')['in'])->toBe('header');
-    $schema = $spec['components']['schemas']['BookRideRequest'];
-    expect($schema['properties'])->not->toHaveKey('idempotency_key');
+    expect($spec['components']['schemas']['BookRideRequest']['properties'])->not->toHaveKey('idempotency_key');
     expect($spec['components']['schemas']['RideResource']['properties'])->not->toHaveKey('request_hash');
-    $operations = collect($spec['paths'])->sum(fn ($path) => count(array_intersect(array_keys($path), ['get', 'post', 'delete', 'put', 'patch'])));
-    $postman = json_decode(File::get(base_path('docs/postman/wmo-api.postman_collection.json')), true, 512, JSON_THROW_ON_ERROR);
-    expect($postman['item'])->toHaveCount($operations);
-    expect(glob(base_path('docs/bruno/*.bru')))->toHaveCount($operations);
-    expect(File::exists(base_path('docs/bruno.zip')))->toBeTrue();
-    $environment = json_decode(File::get(base_path('docs/postman/local.postman_environment.json')), true, 512, JSON_THROW_ON_ERROR);
-    expect(collect($environment['values'])->firstWhere('key', 'token')['value'])->toBe('');
 });
 
 it('restricts documentation outside development', function () {
     $this->app->detectEnvironment(fn () => 'production');
     $this->get('/docs/api.json')->assertForbidden();
+});
+
+it('defaults and hardens resident municipalities to Utrecht', function () {
+    $resident = Resident::factory()->create();
+    expect($resident->municipality)->toBe(Resident::MUNICIPALITY_UTRECHT);
+
+    expect(fn () => Resident::factory()->create(['municipality' => 'other']))
+        ->toThrow(QueryException::class);
+
+    expect(fn () => DB::table('residents')->insert([
+        'name' => 'Null Municipality',
+        'reference' => 'WMO-NULL',
+        'municipality' => null,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]))->toThrow(QueryException::class);
 });

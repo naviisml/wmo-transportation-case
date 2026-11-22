@@ -22,14 +22,9 @@ function submit() {
         <form class="mt-5 grid gap-5" @submit.prevent="submit">
             <div class="space-y-2">
                 <Label for="token-name">Token name</Label
-                ><Input
-                    id="token-name"
-                    v-model="name"
-                    required
-                    maxlength="80"
-                    placeholder="My Bruno client"
-                    :aria-invalid="!!errors.name"
-                /><InputError :message="errors.name?.[0]" />
+                ><Input id="token-name" v-model="name" required maxlength="80" placeholder="My API client" :aria-invalid="!!errors.name" /><InputError
+                    :message="errors.name?.[0]"
+                />
             </div>
             <div class="space-y-2">
                 <Label for="token-password">Current password</Label

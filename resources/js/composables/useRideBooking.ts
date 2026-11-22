@@ -9,14 +9,18 @@ export function useRideBooking(resident: Resident) {
     const request = useApiRequest();
     let attempt: { payload: string; key: string } | undefined;
 
-    async function submit(): Promise<Ride | undefined> {
+    async function submit(distanceMeters: number): Promise<Ride | undefined> {
+        if (!Number.isFinite(distanceMeters) || distanceMeters <= 0) return undefined;
+        const meters = Math.round(distanceMeters);
+        if (!Number.isFinite(meters) || meters <= 0) return undefined;
+
         return request.execute(async () => {
             const payload = {
                 resident_id: resident.id,
                 origin: form.origin,
                 destination: form.destination,
                 scheduled_at: new Date(form.scheduled_at).toISOString(),
-                distance_meters: Math.round(Number(form.distance_km) * 1000),
+                distance_meters: meters,
             };
             const serialized = JSON.stringify(payload);
             if (!attempt || attempt.payload !== serialized) {

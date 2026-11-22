@@ -18,7 +18,10 @@ class RenewBudgets extends Command
         $today = CarbonImmutable::today('Europe/Amsterdam');
 
         WmoAuthorization::query()
-            ->activeOn($today)
+            ->where('starts_on', '<=', $today->toDateString())
+            ->where(fn ($query) => $query
+                ->whereNull('terminated_on')
+                ->orWhereColumn('terminated_on', '>', 'starts_on'))
             ->eachById(fn (WmoAuthorization $authorization) => $action->handle($authorization->id, $today));
 
         $this->info('Budget periods reconciled.');

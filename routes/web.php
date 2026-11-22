@@ -23,14 +23,5 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('can:access-rides')->name('rides.index');
     Route::get('api-access', fn () => Inertia::render('ApiAccess/Index'))->name('api-access');
 
-    Route::get('downloads/{artifact}', function (string $artifact) {
-        $files = ['openapi' => 'docs/openapi.json', 'postman' => 'docs/postman/wmo-api.postman_collection.json', 'environment' => 'docs/postman/local.postman_environment.json', 'bruno' => 'docs/bruno.zip'];
-        abort_unless(isset($files[$artifact]), 404);
-
-        $path = base_path($files[$artifact]);
-        abort_unless(is_file($path), 404);
-
-        return response()->download($path);
-    });
 });
 require __DIR__.'/settings.php';

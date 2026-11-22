@@ -17,9 +17,20 @@ const applicableBudget = computed(() => {
     return Number.isNaN(date.getTime()) ? undefined : budgetForDate(props.resident, amsterdamDate(date));
 });
 const allowanceAvailable = computed(() => (applicableBudget.value?.remaining_meters ?? 0) > 0);
+const requestedMeters = computed<number | undefined>(() => {
+    const kilometers = Number(form.distance_km);
+    if (!Number.isFinite(kilometers) || kilometers <= 0) return undefined;
+    const meters = Math.round(kilometers * 1000);
+    return Number.isFinite(meters) && meters > 0 ? meters : undefined;
+});
+const insufficientAllowance = computed(() => {
+    if (requestedMeters.value === undefined) return false;
+    return requestedMeters.value > (applicableBudget.value?.remaining_meters ?? 0);
+});
 
 async function confirm() {
-    const ride = await submit();
+    if (requestedMeters.value === undefined) return;
+    const ride = await submit(requestedMeters.value);
     if (ride) emit('booked', ride);
 }
 </script>
@@ -77,10 +88,15 @@ async function confirm() {
         <p v-if="!canBook || !allowanceAvailable" class="text-sm text-amber-700 dark:text-amber-400">
             No active authorization with an available allowance exists for this booking.
         </p>
+        <p v-if="insufficientAllowance" class="text-sm text-amber-700 dark:text-amber-400">
+            The requested distance exceeds the available allowance of {{ kilometers(applicableBudget?.remaining_meters ?? 0) }} km.
+        </p>
         <p v-if="form.scheduled_at && applicableBudget" class="text-sm text-muted-foreground">
             Selected period: {{ applicableBudget.starts_on }} → {{ applicableBudget.ends_on }}. Available:
             {{ kilometers(applicableBudget.remaining_meters) }} km.
         </p>
-        <Button :disabled="pending || !canBook || !allowanceAvailable">Confirm booking</Button>
+        <Button :disabled="pending || !canBook || !allowanceAvailable || insufficientAllowance || requestedMeters === undefined"
+            >Confirm booking</Button
+        >
     </form>
 </template>

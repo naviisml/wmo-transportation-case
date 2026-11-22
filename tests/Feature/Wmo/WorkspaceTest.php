@@ -14,7 +14,7 @@ beforeEach(function () {
     $this->seed(DemoSeeder::class);
 });
 
-it('provides municipal aggregates without granting resident access', function () {
+it('keeps resident records out of municipal aggregates', function () {
     $user = User::where('email', 'gemeente@example.test')->firstOrFail();
     Sanctum::actingAs($user, ['dashboard:read']);
     $response = $this->getJson('/api/v1/dashboard')
@@ -30,6 +30,7 @@ it('provides municipal aggregates without granting resident access', function ()
         ->assertJsonPath('data.budget.allocated_meters', 16_584_000);
     expect($response->json('data'))->not->toHaveKeys(['residents', 'rides', 'name', 'address', 'reference']);
     $this->getJson('/api/v1/residents')->assertForbidden();
+    $this->getJson('/api/v1/residents/1')->assertForbidden();
     $this->getJson('/api/v1/rides')->assertForbidden();
 });
 
@@ -77,7 +78,7 @@ it('authorizes page routes before rendering them', function (string $account, ar
         $this->get($path)->assertForbidden();
     }
 })->with([
-    ['gemeente', ['/dashboard', '/municipality', '/api-access'], ['/residents', '/residents/1', '/residents/1/rides/create', '/book-ride', '/rides']],
+    ['gemeente', ['/dashboard', '/municipality', '/residents', '/residents/1', '/api-access'], ['/residents/1/rides/create', '/book-ride', '/rides']],
     ['callcenter', ['/dashboard', '/residents', '/book-ride', '/api-access'], ['/municipality', '/rides']],
     ['taxi-a', ['/dashboard', '/rides', '/api-access'], ['/municipality', '/residents', '/book-ride']],
 ]);

@@ -11,6 +11,10 @@ class ResidentFactory extends Factory
 
     public function definition(): array
     {
-        return ['name' => 'Demo '.fake()->name(), 'reference' => fake()->unique()->numerify('WMO-######')];
+        return [
+            'name' => 'Demo '.fake()->name(),
+            'reference' => fake()->unique()->numerify('WMO-######'),
+            'municipality' => Resident::MUNICIPALITY_UTRECHT,
+        ];
     }
 }

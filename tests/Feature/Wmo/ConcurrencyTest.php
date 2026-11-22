@@ -1,7 +1,9 @@
 <?php
 
 use App\Actions\BookRide;
+use App\Data\BookRideData;
 use App\Enums\Role;
+use App\Exceptions\BookingConflict;
 use App\Models\Resident;
 use App\Models\Ride;
 use App\Models\User;
@@ -9,7 +11,6 @@ use Carbon\CarbonImmutable;
 use Database\Seeders\DemoSeeder;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\DB;
-use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 uses(DatabaseMigrations::class);
 it('serializes competing bookings and concurrent retries on PostgreSQL', function (bool $sameKey) {
@@ -42,9 +43,9 @@ it('serializes competing bookings and concurrent retries on PostgreSQL', functio
                 }usleep(1000);
             }
             try {
-                $ride = app(BookRide::class)->handle(User::findOrFail($userIds[$i]), $payload, $sameKey ? 'concurrent-retry' : 'concurrent-'.$i);
+                $ride = app(BookRide::class)->handle(User::findOrFail($userIds[$i]), BookRideData::fromArray($payload), $sameKey ? 'concurrent-retry' : 'concurrent-'.$i);
                 file_put_contents($directory.'/'.$i, json_encode(['id' => $ride->id]));
-            } catch (ConflictHttpException $e) {
+            } catch (BookingConflict $e) {
                 file_put_contents($directory.'/'.$i, json_encode(['conflict' => true]));
             } catch (Throwable $e) {
                 file_put_contents($directory.'/'.$i, json_encode(['error' => $e->getMessage()]));

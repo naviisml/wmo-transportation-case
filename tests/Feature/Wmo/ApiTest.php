@@ -2,7 +2,7 @@
 
 use App\Actions\BookRide;
 use App\Actions\RenewBudgetPeriod;
-use App\Models\Address;
+use App\Data\BookRideData;
 use App\Models\BudgetPeriod;
 use App\Models\ParcelAssignment;
 use App\Models\Resident;
@@ -43,15 +43,13 @@ it('searches and paginates minimized resident data', function () {
     $this->getJson('/api/v1/residents/999999')->assertNotFound();
 });
 
-it('lists the whole Utrecht register regardless of Wmo status or postal locality', function () {
-    $otherMunicipality = Resident::factory()->create(['municipality' => 'other']);
-    $unclassified = Resident::factory()->create();
+it('lists the whole Utrecht register regardless of Wmo status or postal locality', function (string $account) {
     $withoutAuthorization = Resident::where('reference', 'DEMO-008')->firstOrFail();
     $withoutAuthorization->address()->update(['city' => 'Vleuten']);
     $withoutAddress = Resident::factory()->create(['municipality' => Resident::MUNICIPALITY_UTRECHT]);
-    Address::factory()->for($otherMunicipality)->create(['city' => 'Utrecht']);
 
-    Sanctum::actingAs($this->callcenter, ['residents:read', 'rides:book']);
+    $user = User::where('email', $account.'@example.test')->firstOrFail();
+    Sanctum::actingAs($user, ['residents:read']);
     $first = $this->getJson('/api/v1/residents')
         ->assertOk()
         ->assertJsonPath('meta.total', 25)
@@ -64,24 +62,31 @@ it('lists the whole Utrecht register regardless of Wmo status or postal locality
     $ids = collect([...$first->json('data'), ...$second->json('data')])->pluck('id');
     expect($ids->unique()->count())->toBe(25);
     expect($ids->all())->toContain($withoutAuthorization->id, $withoutAddress->id);
-    expect($ids->all())->not->toContain($otherMunicipality->id, $unclassified->id);
 
     $this->getJson('/api/v1/residents/'.$withoutAuthorization->id)
         ->assertOk()
         ->assertJsonPath('data.authorization', null);
-    $this->getJson('/api/v1/residents/'.$otherMunicipality->id)->assertNotFound();
-    bookRequest($this, [...$this->payload, 'resident_id' => $otherMunicipality->id])
-        ->assertUnprocessable()
-        ->assertJsonValidationErrors('resident_id');
-});
+
+    Sanctum::actingAs($this->callcenter, ['rides:book']);
+    bookRequest($this, [...$this->payload, 'resident_id' => $withoutAddress->id])
+        ->assertConflict();
+})->with(['callcenter', 'gemeente']);
+
 it('enforces roles and token abilities as well as policies', function () {
-    foreach (['gemeente', 'taxi-a', 'taxi-b'] as $account) {
+    foreach (['taxi-a', 'taxi-b'] as $account) {
         $user = User::where('email', $account.'@example.test')->firstOrFail();
         Sanctum::actingAs($user, ['*']);
         $this->getJson('/api/v1/residents')->assertForbidden();
+        $this->getJson('/api/v1/residents/'.$this->resident->id)->assertForbidden();
         bookRequest($this)->assertForbidden();
         expect(Gate::forUser($user)->allows('viewAny', Resident::class))->toBeFalse();
-    }Sanctum::actingAs($this->callcenter, ['me:read']);
+    }
+
+    Sanctum::actingAs(User::where('email', 'gemeente@example.test')->firstOrFail(), ['*']);
+    $this->getJson('/api/v1/rides')->assertForbidden();
+    bookRequest($this)->assertForbidden();
+
+    Sanctum::actingAs($this->callcenter, ['me:read']);
     $this->getJson('/api/v1/residents')->assertForbidden();
     bookRequest($this)->assertForbidden();
 });
@@ -111,6 +116,10 @@ it('deduplicates booking retries and rejects key reuse with different data', fun
     Sanctum::actingAs($this->callcenter, ['*']);
     $first = bookRequest($this)->assertCreated();
     bookRequest($this)->assertCreated()->assertJsonPath('data.id', $first->json('data.id'));
+    $sameInstant = CarbonImmutable::parse($this->payload['scheduled_at'])->utc()->toIso8601String();
+    bookRequest($this, [...$this->payload, 'scheduled_at' => $sameInstant])
+        ->assertCreated()
+        ->assertJsonPath('data.id', $first->json('data.id'));
     expect(Ride::where('idempotency_key', 'test-booking')->count())->toBe(1);
     bookRequest($this, [...$this->payload, 'distance_meters' => 20000])->assertConflict();
 });
@@ -120,6 +129,9 @@ it('rejects invalid inputs and client supplied company claims', function () {
     foreach ([['distance_meters' => -1], ['taxi_company_id' => 1], ['scheduled_at' => '2020-01-01T00:00:00Z'], ['scheduled_at' => '2027-01-01 12:00:00'], ['resident_id' => 999999]] as $change) {
         bookRequest($this, [...$this->payload, ...$change])->assertUnprocessable();
     }
+    bookRequest($this, [...$this->payload, 'scheduled_at' => '2020-01-01T00:00:00Z'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('scheduled_at');
 });
 it('rejects absent or terminated authorizations', function (string $reference) {
     Sanctum::actingAs($this->callcenter, ['*']);
@@ -154,7 +166,7 @@ it('rolls back the ride when the budget update fails', function () {
     $before = Ride::count();
     DB::unprepared("CREATE FUNCTION test_budget_failure() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'simulated write failure'; END $$; CREATE TRIGGER test_budget_failure BEFORE UPDATE ON budget_periods FOR EACH ROW EXECUTE FUNCTION test_budget_failure()");
     try {
-        app(BookRide::class)->handle($this->callcenter, $this->payload, 'rollback');
+        app(BookRide::class)->handle($this->callcenter, BookRideData::fromArray($this->payload), 'rollback');
         $this->fail('Expected database failure');
     } catch (QueryException $e) {
         expect($e->getMessage())->toContain('simulated write failure');
@@ -183,14 +195,30 @@ it('authenticates a real bearer token and honors revocation', function () {
     $this->withToken($token->plainTextToken)->getJson('/api/v1/me')->assertUnauthorized();
 });
 it('only allows password verified sessions to create tokens', function () {
-    $this->actingAs($this->callcenter)->postJson('/api/v1/tokens', ['name' => 'Bruno', 'password' => 'wrong'])->assertUnprocessable();
-    $response = $this->postJson('/api/v1/tokens', ['name' => 'Bruno', 'password' => 'demo-assessment-only'])->assertCreated();
+    $this->actingAs($this->callcenter)->postJson('/api/v1/tokens', ['name' => 'API client', 'password' => 'wrong'])->assertUnprocessable();
+    $response = $this->postJson('/api/v1/tokens', ['name' => 'API client', 'password' => 'demo-assessment-only'])->assertCreated();
     expect($response->json('token'))->toContain('|');
     $this->getJson('/api/v1/tokens')->assertOk()->assertJsonMissingPath('data.0.token');
     $token = $this->callcenter->tokens()->firstOrFail();
     expect($token->abilities)->toBe(['residents:read', 'rides:book', 'dashboard:read']);
     $this->deleteJson('/api/v1/tokens/'.$token->id)->assertNoContent();
 });
+
+it('issues municipal tokens with read-only access to Utrecht residents', function () {
+    $municipality = User::where('email', 'gemeente@example.test')->firstOrFail();
+    $token = $this->actingAs($municipality)
+        ->postJson('/api/v1/tokens', ['name' => 'Resident lookup', 'password' => 'demo-assessment-only'])
+        ->assertCreated()
+        ->json('token');
+
+    $this->app['auth']->forgetGuards();
+    $this->withToken($token)->getJson('/api/v1/residents?search=DEMO-001')
+        ->assertOk()
+        ->assertJsonPath('data.0.id', $this->resident->id);
+    $this->getJson('/api/v1/residents/'.$this->resident->id)->assertOk();
+    bookRequest($this)->assertForbidden();
+});
+
 it('prevents bearer clients minting or listing tokens', function () {
     Sanctum::actingAs($this->callcenter, ['*']);
     $this->postJson('/api/v1/tokens', ['name' => 'escalation', 'password' => 'demo-assessment-only'])->assertForbidden();

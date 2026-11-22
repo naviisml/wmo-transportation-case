@@ -28,11 +28,6 @@ return [
     'api_domain' => null,
 
     /*
-     * The path where your OpenAPI specification will be exported.
-     */
-    'export_path' => 'docs/openapi.json',
-
-    /*
      * Cache configuration for the generated OpenAPI document.
      *
      * Use `scramble:cache` to warm the cache and `scramble:clear` to invalidate it.
@@ -57,9 +52,9 @@ return [
          * Description rendered on the home page of the API documentation (`/docs/api`).
          */
         'description' => <<<'MARKDOWN'
-Callcenter accounts can look up Utrecht residents and book rides. Taxi-company
-accounts can list rides assigned to their company. Municipal accounts can view
-aggregate statistics. The demo contains fictional records.
+Callcenter and municipal accounts can look up Utrecht residents. Callcenter
+accounts can also book rides. Taxi-company accounts can list rides assigned to
+their company. The demo contains fictional records.
 
 ## Authentication
 

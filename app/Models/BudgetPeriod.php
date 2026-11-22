@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Exceptions\BookingConflict;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -33,6 +34,20 @@ class BudgetPeriod extends Model
     public function rides(): HasMany
     {
         return $this->hasMany(Ride::class);
+    }
+
+    public function availableMeters(): int
+    {
+        return $this->allocated_meters - $this->consumed_meters;
+    }
+
+    public function consume(int $meters): void
+    {
+        if ($meters < 1 || $this->availableMeters() < $meters) {
+            throw new BookingConflict('Insufficient distance budget.');
+        }
+
+        $this->increment('consumed_meters', $meters);
     }
 
     public function scopeCovering(Builder $query, CarbonImmutable $day): Builder

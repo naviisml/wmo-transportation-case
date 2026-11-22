@@ -18,6 +18,7 @@ class Ride extends Model
     protected $fillable = [
         'resident_id',
         'budget_period_id',
+        'wmo_authorization_id',
         'parcel_id',
         'parcel_assignment_id',
         'taxi_company_id',

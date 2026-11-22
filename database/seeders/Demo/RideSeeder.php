@@ -76,6 +76,7 @@ class RideSeeder extends DemoDataSeeder
         Ride::create([
             'resident_id' => $resident->id,
             'budget_period_id' => $period->id,
+            'wmo_authorization_id' => $resident->authorization->id,
             'parcel_id' => $assignment->parcel_id,
             'parcel_assignment_id' => $assignment->id,
             'taxi_company_id' => $assignment->taxi_company_id,
