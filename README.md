@@ -15,7 +15,7 @@ docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/var/www/html" -w /var/www/html 
 ./vendor/bin/sail artisan migrate --seed
 ./vendor/bin/sail npm ci
 ./vendor/bin/sail npm run build
-./vendor/bin/sail artisan wmo:export-api
+./vendor/bin/sail artisan scramble:export
 ```
 
 ## Demo
