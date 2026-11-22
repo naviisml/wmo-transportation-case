@@ -23,9 +23,9 @@ const { summary, pending, error, status, load } = useDashboard();
                 title="Municipal overview"
                 description="Program totals, annual distance allowances and current parcel coverage. All figures use fictional assessment data."
             >
-                <template #actions
-                    ><Button as-child variant="outline"><Link href="/dashboard">Back to overview</Link></Button></template
-                >
+                <template #actions>
+                    <Button as-child variant="outline"><Link href="/residents">View residents</Link></Button>
+                </template>
             </PageHeading>
             <RequestFeedback :pending="pending" :error="error" :status="status" @retry="load" />
             <template v-if="summary && !error">
@@ -62,9 +62,6 @@ const { summary, pending, error, status, load } = useDashboard();
                         :value="summary.upcoming_rides"
                     />
                 </div>
-                <p class="rounded-lg bg-muted/50 p-4 text-sm text-muted-foreground">
-                    Municipal access contains aggregate figures. Individual resident records and ride booking are restricted to the callcenter.
-                </p>
             </template>
         </div>
     </AppLayout>

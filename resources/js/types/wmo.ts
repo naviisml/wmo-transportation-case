@@ -13,6 +13,7 @@ export interface Resident {
     address: { street: string; house_number: string; postal_code: string; city: string } | null;
     authorization: { starts_on: string; terminated_on: string | null; budget_periods: Budget[] } | null;
 }
+export type RideStatus = 'booked' | 'completed' | 'cancelled';
 export interface Ride {
     id: number;
     resident: { id: number; name: string };
@@ -20,7 +21,7 @@ export interface Ride {
     destination: string;
     scheduled_at: string;
     distance_meters: number;
-    status: string;
+    status: RideStatus;
     taxi_company: { id: number; name: string };
     budget?: Budget;
 }

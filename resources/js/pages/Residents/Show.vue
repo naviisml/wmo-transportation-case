@@ -8,9 +8,11 @@ import RequestFeedback from '@/components/wmo/RequestFeedback.vue';
 import { useResident } from '@/composables/useResident';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { currentBudget } from '@/lib/wmo';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 const props = defineProps<{ residentId: number }>();
+const page = usePage();
+const canBookRide = computed(() => page.props.auth.user.role === 'callcenter');
 const { resident, pending, error, status, load } = useResident(props.residentId);
 const budget = computed(() => (resident.value ? currentBudget(resident.value) : undefined));
 const breadcrumbs = computed(() => [
@@ -27,10 +29,12 @@ const breadcrumbs = computed(() => [
                 :title="resident?.name ?? 'Resident details'"
                 description="Authorization, residential address and annual distance allowances."
             >
-                <template #actions
-                    ><Button as-child variant="outline"><Link href="/residents">Back to residents</Link></Button
-                    ><Button v-if="resident" as-child><Link :href="`/residents/${residentId}/rides/create`">Book a ride</Link></Button></template
-                >
+                <template #actions>
+                    <Button as-child variant="outline"><Link href="/residents">Back to residents</Link></Button>
+                    <Button v-if="resident && canBookRide" as-child>
+                        <Link :href="`/residents/${residentId}/rides/create`">Book a ride</Link>
+                    </Button>
+                </template>
             </PageHeading>
             <RequestFeedback :pending="pending" :error="error" :status="status" @retry="load" />
             <template v-if="resident && !error">

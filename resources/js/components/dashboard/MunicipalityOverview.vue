@@ -14,6 +14,6 @@ defineProps<{ summary: DashboardSummary }>();
     <WorkspaceLink
         href="/municipality"
         title="Municipal overview"
-        description="Review authorization totals, annual allowance usage and parcel coverage. This page contains aggregate figures without resident records."
+        description="Review authorization totals, annual allowance usage and parcel coverage."
     />
 </template>
