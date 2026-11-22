@@ -42,7 +42,7 @@ class TokenController extends Controller
         $abilities = match ($request->user()->role) {
             Role::Callcenter => ['residents:read', 'rides:book', 'dashboard:read'],
             Role::TaxiCompany => ['rides:read', 'dashboard:read'],
-            default => ['me:read', 'dashboard:read']
+            Role::Municipality => ['me:read', 'dashboard:read', 'residents:read'],
         };
         $token = $request->user()->createToken($request->validated('name'), $abilities, now()->addDays(30));
 

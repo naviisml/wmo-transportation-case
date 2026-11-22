@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\Role;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -34,7 +33,7 @@ class Resident extends Model
 
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        return $query->inUtrecht()->when($user->role !== Role::Callcenter, fn ($query) => $query->whereRaw('false'));
+        return $query->inUtrecht()->when($user->cannot('viewAny', self::class), fn ($query) => $query->whereRaw('false'));
     }
 
     public function scopeInUtrecht(Builder $query): Builder

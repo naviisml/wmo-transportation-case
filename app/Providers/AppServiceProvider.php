@@ -21,6 +21,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::define('view-dashboard', [WorkspacePolicy::class, 'dashboard']);
         Gate::define('access-residents', [WorkspacePolicy::class, 'residents']);
+        Gate::define('access-ride-booking', [WorkspacePolicy::class, 'bookRide']);
         Gate::define('access-rides', [WorkspacePolicy::class, 'rides']);
         Gate::define('access-municipality', [WorkspacePolicy::class, 'municipality']);
         RateLimiter::for('login', fn (Request $r) => Limit::perMinute(5)->by(strtolower((string) $r->input('email')).'|'.$r->ip()));

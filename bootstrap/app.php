@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Exceptions\InvalidBooking;
+use App\Exceptions\BookingConflict;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -41,6 +43,15 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (Throwable $exception, Request $request) {
             if (! $request->is('api/*')) {
                 return null;
+            }
+            if ($exception instanceof BookingConflict) {
+                return response()->json(['message' => $exception->getMessage()], 409);
+            }
+            if ($exception instanceof InvalidBooking) {
+                return response()->json([
+                    'message' => 'The given data was invalid.',
+                    'errors' => [$exception->field => [$exception->getMessage()]],
+                ], 422);
             }
             if ($exception instanceof HttpExceptionInterface) {
                 $status = $exception->getStatusCode();

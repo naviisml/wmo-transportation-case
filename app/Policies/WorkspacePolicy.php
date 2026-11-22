@@ -14,6 +14,11 @@ class WorkspacePolicy
 
     public function residents(User $user): bool
     {
+        return $user->role->canViewResidents();
+    }
+
+    public function bookRide(User $user): bool
+    {
         return $user->role === Role::Callcenter;
     }
 

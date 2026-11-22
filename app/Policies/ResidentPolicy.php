@@ -2,7 +2,6 @@
 
 namespace App\Policies;
 
-use App\Enums\Role;
 use App\Models\Resident;
 use App\Models\User;
 
@@ -10,7 +9,7 @@ class ResidentPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->role === Role::Callcenter && $user->tokenCan('residents:read');
+        return $user->role->canViewResidents() && $user->tokenCan('residents:read');
     }
 
     public function view(User $user, Resident $resident): bool

@@ -14,12 +14,8 @@ const role = computed(() => page.props.auth.user?.role);
 const mainNavItems = computed<NavItem[]>(() => [
     { title: 'Overview', href: '/dashboard', icon: LayoutGrid },
     ...(role.value === 'municipality' ? [{ title: 'Municipal overview', href: '/municipality', icon: Building2 }] : []),
-    ...(role.value === 'callcenter'
-        ? [
-              { title: 'Residents', href: '/residents', icon: Users },
-              { title: 'Book a ride', href: '/book-ride', icon: CarFront },
-          ]
-        : []),
+    ...(role.value === 'municipality' || role.value === 'callcenter' ? [{ title: 'Residents', href: '/residents', icon: Users }] : []),
+    ...(role.value === 'callcenter' ? [{ title: 'Book a ride', href: '/book-ride', icon: CarFront }] : []),
     ...(role.value === 'taxi_company' ? [{ title: 'Assigned rides', href: '/rides', icon: CarFront }] : []),
     { title: 'API access', href: '/api-access', icon: KeyRound },
 ]);
