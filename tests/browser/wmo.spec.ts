@@ -70,7 +70,7 @@ for (const account of ['taxi-a', 'taxi-b']) {
         await page.screenshot({ path: `test-results/${account}-mobile.png`, fullPage: true });
     });
 }
-test('municipality opens its aggregate overview without resident access', async ({ page }) => {
+test('municipality opens its overview and browses Utrecht residents', async ({ page }) => {
     await login(page, 'gemeente');
     await page.getByRole('link', { name: 'Municipal overview', exact: true }).first().click();
     await expect(page).toHaveURL(/\/municipality$/);
@@ -81,10 +81,18 @@ test('municipality opens its aggregate overview without resident access', async 
     expect(summary.data.role).toBe('municipality');
     expect(summary.data.residents_total).toBeGreaterThanOrEqual(24);
     expect(summary.data).not.toHaveProperty('residents');
-    expect((await page.request.get('/api/v1/residents')).status()).toBe(403);
-    expect((await page.request.get('/residents')).status()).toBe(403);
     expect((await page.request.get('/docs/api.json')).status()).toBe(200);
     await page.screenshot({ path: 'test-results/municipality-overview.png', fullPage: true });
+    await page.getByRole('link', { name: 'View residents', exact: true }).click();
+    await expect(page).toHaveURL(/\/residents$/);
+    await page.getByLabel('Find resident by name or reference').fill('DEMO-008');
+    await page.getByRole('button', { name: 'Search', exact: true }).click();
+    await expect(page.getByRole('link', { name: 'View resident', exact: true })).toHaveCount(1);
+    await expect(page.getByRole('cell', { name: /DEMO-008/ })).toBeVisible();
+    await page.getByRole('link', { name: 'View resident', exact: true }).click();
+    await expect(page).toHaveURL(/\/residents\/\d+$/);
+    await expect(page.getByRole('heading', { name: 'Resident & authorization' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Book a ride', exact: true })).toHaveCount(0);
 });
 
 test('booking entry point selects a resident on a dedicated page', async ({ page }) => {
