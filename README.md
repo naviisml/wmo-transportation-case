@@ -29,7 +29,7 @@ Alle demoaccounts gebruiken `DEMO_PASSWORD` uit `.env`. De standaardwaarde is `t
 | `callcenter@example.test` | Inwoners zoeken en ritten boeken |
 | `taxi-a@example.test` | De ritten van Demo Taxi A bekijken |
 | `taxi-b@example.test` | De ritten van Demo Taxi B bekijken |
-| `gemeente@example.test` | Aantallen en budgetten voor de hele gemeente bekijken |
+| `gemeente@example.test` | Inwoners van Utrecht opzoeken en gemeentebrede cijfers bekijken |
 
 ## API
 
@@ -39,7 +39,6 @@ Alle demoaccounts gebruiken `DEMO_PASSWORD` uit `.env`. De standaardwaarde is `t
 | `POST /api/v1/rides` | Rit boeken en de afstand direct afboeken. |
 | `GET /api/v1/rides` | Toegewezen ritten van het ingelogde taxibedrijf ophalen. |
 
-De Vue-app gebruikt dezelfde API als externe clients. Voor dit project heb ik Forfity met Sanctum toegevoegd voor API Tokens en de Postman- en Bruno-collecties zijn beschikbaar via **API access**. [API-documentatie](http://localhost/docs/api).
 
 ## Jaarbudget
 
